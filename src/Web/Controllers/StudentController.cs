@@ -1,11 +1,11 @@
-﻿using Microsoft.AspNetCore.Components.Forms;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using ConsultaAlumnos.Application.Interfaces;
-using ConsultaAlumnos.Application.Models;
-using ConsultaAlumnos.Application.Models.Requests;
 using ConsultaAlumnos.Domain.Entities;
 using ConsultaAlumnos.Domain.Exceptions;
+using ConsultaAlumnos.Application.Interfaces;
+using ConsultaAlumnos.Application.Models;
+using ConsultaAlumnos.Application.Services;
+using ConsultaAlumnos.Application.Models.Requests;
 
 namespace ConsultaAlumnos.Web;
 
@@ -19,42 +19,72 @@ public class StudentController : ControllerBase
         _studentService = studentService;
     }
 
-    [HttpPost]
+    [HttpPost("[action]")]
     public IActionResult Create([FromBody] StudentCreateRequest studentCreateRequest)
     {
-        var obj = _studentService.Create(studentCreateRequest);
-        return CreatedAtAction(nameof(Get), new { id = obj.Id }, obj);
+        try
+        {
+            var obj = _studentService.Create(studentCreateRequest);
+            return CreatedAtAction(nameof(GetByID), new {id = obj.Id}, obj);
+        }
+        catch (NotFoundException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
+
+    [HttpGet("{id}")]
+    public ActionResult<StudentDto> GetByID([FromRoute] int id)
+    {
+        try
+        {
+            return Ok(_studentService.GetById(id));
+        }
+        catch (NotFoundException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
 
     [HttpPut("{id}")]
     public IActionResult Update([FromRoute] int id, [FromBody] StudentUpdateRequest studentUpdateRequest)
     {
-        _studentService.Update(id, studentUpdateRequest);
-        return NoContent();
+        try
+        {
+            _studentService.Update(id, studentUpdateRequest);
+            return NoContent();
+        }
+        catch (NotFoundException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpDelete("{id}")]
     public IActionResult Delete([FromRoute] int id)
     {
-        _studentService.Delete(id);
-        return NoContent();
+        try
+        {
+            _studentService.Delete(id);
+            return NoContent();
+        }
+        catch (NotFoundException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
-    [HttpGet]
+    [HttpGet("[Action]")]
     public ActionResult<List<StudentDto>> GetAll()
     {
-        return _studentService.GetAll();
+        return Ok(_studentService.GetAll());
     }
 
-    [HttpGet("[action]")]
-    public ActionResult<List<Student>> GetAllFullData()
+    [HttpGet("[Action]")]
+    public List<Student> GetAllFullData()
     {
         return _studentService.GetAllFullData();
     }
 
-    [HttpGet("{id}")]
-    public ActionResult<StudentDto> Get([FromRoute] int id)
-    {
-        return _studentService.GetById(id);
-    }
 }
